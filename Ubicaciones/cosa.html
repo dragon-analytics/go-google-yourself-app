@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+
+var map;
+function initMap() {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: {lat: 20.442 , lng: -87.287},
+    zoom: 17
+  });
+  
+   var marker = new google.maps.Marker({
+          map: map,
+        draggable: true, icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale:5
+          },
+
+          position: {lat: 20.439 , lng: -87.288},
+          title: 'Hello World!'
+        });var marker = new google.maps.Marker({
+          map: map,
+        draggable: true, icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale:5
+          },
+
+          position: {lat: 20.439 , lng: -87.289},
+          title: 'Hello World!'
+        });var marker = new google.maps.Marker({
+          map: map,
+        draggable: true, icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale:5
+          },
+
+          position: {lat: 20.44 , lng: -87.289},
+          title: 'Hello World!'
+        });var marker = new google.maps.Marker({
+          map: map,
+        draggable: true, icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale:5
+          },
+
+          position: {lat: 20.44 , lng: -87.288},
+          title: 'Hello World!'
+        });var marker = new google.maps.Marker({
+          map: map,
+        draggable: true, icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale:5
+          },
+
+          position: {lat: 20.442 , lng: -87.287},
+          title: 'Hello World!'
+        });
+}
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-yjSWzs0WVI822X6a68P5JpsqjLVCxHk&callback=initMap"
+        async defer></script>
+  </body>
+</html>

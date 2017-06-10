@@ -1,0 +1,31 @@
+version: '3'
+services:
+  luigi-server:                                                                         
+    image: localhost:5000/dpa/luigi-server:0.2
+    ports:                                              
+      - "8082:8082"
+    volumes:
+      - dpaequipo10_store:/dpaequipo10/data
+    networks:
+      - dpaequipo10_net
+
+  luigi-worker:
+    image: localhost:5000/dpa/luigi-worker:0.2
+    hostname: worker
+    volumes:
+      - dpaequipo10_store:/dpaequipo10/data
+    environment:
+      LUIGI_CORE_DEFAULT-SCHEDULER-URL: http://luigi-server:8082
+    networks:
+      - dpaequipo10_net
+    depends_on:
+      - luigi-server
+    deploy:
+      replicas: 5
+
+volumes:
+  dpaequipo10_store:
+
+networks:
+  dpaequipo10_net:
+    external: true

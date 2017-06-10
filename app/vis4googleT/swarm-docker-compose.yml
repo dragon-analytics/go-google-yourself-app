@@ -1,0 +1,17 @@
+version: "3"
+
+services: 
+
+   api:
+     image: vis4googlet_api
+     env_file: .env
+     ports:
+        - "3838:3838"
+     networks:
+        - vis4g
+
+networks:
+  vis4g:
+    external: true
+
+

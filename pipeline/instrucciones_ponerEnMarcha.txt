@@ -1,0 +1,140 @@
+wget https://s3-us-west-2.amazonaws.com/vis4googlet/analisis_busq.txt -P /tmp/
+
+unzip -a /tmp/*.zip -d /tmp/
+
+mv /tmp/Takeout/B* /tmp/Takeout/busquedas
+
+mv /tmp/Takeout/Hist* /tmp/Takeout/ubicaciones
+
+mv /tmp/Takeout/Mail/*.mbox /tmp/todos_mails.mbox
+
+
+
+git clone https://github.com/ITAM-DS/dpa-equipo-10.git
+
+cd dpa-equipo-10/Proyecto/pipeline
+
+# instalar docker compose
+sudo curl -L \
+ https://github.com/docker/compose/releases/download/1.10.0/docker-compose-$(uname -s)-$(uname -m) \
+-o /usr/local/bin/docker-compose && \ 
+chmod +x /usr/local/bin/docker-compose
+
+# instalar docker-machine
+sudo sh -c 'ls -hal /root/ > /root/test.out'
+
+sudo sh -c 'curl -L https://github.com/docker/machine/releases/download/v0.9.0/docker-machine-`uname -s`-`uname -m` > /usr/local/bin/docker-machine && chmod +x /usr/local/bin/docker-machine'
+
+#install pyenv, this instructions can help: https://gist.github.com/softwaredoug/a871647f53a0810c55ac
+pyenv install 3.5.2
+
+#install ag
+sudo apt-get update
+sudo apt-get install silversearcher-ag
+
+#install hub
+sudo apt-get install ruby
+sudo curl https://hub.github.com/standalone -Lo /usr/bin/hub
+sudo chmod 755 /usr/bin/hub
+
+#install aws
+pip install --upgrade --user awscli
+
+# configurar aws con: aws configure (talvez esto no sea necesaio)
+# ESPECIFICAR CREDENCIALES DE AMAZON EN .env
+
+docker service create --name dpa-registry --publish 5000:5000 registry:2
+
+
+curl localhost:5000/v2/_catalog
+
+
+
+docker tag dpa/luigi-worker localhost:5000/dpa/luigi-worker:0.2
+
+docker push localhost:5000/dpa/luigi-worker:0.2
+
+docker tag dpa/luigi-server localhost:5000/dpa/luigi-server:0.2
+
+docker push localhost:5000/dpa/luigi-server:0.2
+
+docker tag dpaequipo10/test-python-lda localhost:5000/dpaequipo10/test-python-lda:latest
+
+docker push localhost:5000/dpaequipo10/test-python-lda:latest
+
+docker tag dpaequipo10/test-python-mail localhost:5000/dpaequipo10/test-python-mail:latest
+
+docker push localhost:5000/dpaequipo10/test-python-mail:latest
+
+docker tag dpaequipo10/test-python-ubicaciones localhost:5000/dpaequipo10/test-python-ubicaciones:latest
+
+docker push localhost:5000/dpaequipo10/test-python-ubicaciones:latest
+
+docker tag dpaequipo10/test-python-freqmail localhost:5000/dpaequipo10/test-python-freqmail:latest
+
+docker push localhost:5000/dpaequipo10/test-python-freqmail:latest
+
+docker tag dpaequipo10/test-python-freqbusq localhost:5000/dpaequipo10/test-python-freqbusq:latest
+
+docker push localhost:5000/dpaequipo10/test-python-freqbusq:latest
+
+docker tag dpaequipo10/test-python-ubicacioneshtml localhost:5000/dpaequipo10/test-python-ubicacioneshtml:latest
+
+docker push localhost:5000/dpaequipo10/test-python-ubicacioneshtml:latest
+
+# deploy swarm luigi
+docker stack deploy -c infraestructura/docker-compose.yml dpaequipo10_net
+
+
+#quitar tags de localhost
+docker image rm localhost:5000/dpa/luigi-worker:0.2
+docker image rm localhost:5000/dpa/luigi-server:0.2
+docker image rm localhost:5000/dpaequipo10/test-python-lda:latest
+docker image rm localhost:5000/dpaequipo10/test-python-mail:latest
+docker image rm localhost:5000/dpaequipo10/test-python-ubicaciones:latest
+docker image rm localhost:5000/dpaequipo10/test-python-freqmail:latest
+docker image rm localhost:5000/dpaequipo10/test-python-freqbusq:latest
+
+
+#run command on remote machine completely detached, (volver a probar, en un primer intento no funcionó)
+docker-machine ssh aws-node1 screen -d -m ./dpaequipo10/Proyecto/pipeline/scripts/startLuigi.sh
+
+
+
+# pruebas directas con containers
+docker container run --rm -it dpa/luigi-worker:0.2 /bin/bash
+
+#mail
+docker run --rm -v dpaequipo10_store:/dpaequipo10/data --env-file ./.env dpaequipo10/test-python-mail --bucket dpaequipo10 --inputfile /todos_mails.mbox --outputfile /tmp/mail.txt
+
+#ubicaciones
+docker run --rm -v dpaequipo10_store:/dpaequipo10/data --env-file ./.env dpaequipo10/test-python-ubicaciones --bucket dpaequipo10 --inputfile /todas_ubicaciones.json --outputfile /tmp/ubicaciones.csv --inicio_s 01/08/2013 --final_s 30/03/2017 --min_samples_C1 0.05 --min_samples_C2 0.1
+
+inicio_s: 01/08/2016
+final_s: 30/03/2017
+min_samples_per: 0.1
+outfile: /modelo/dbscan_ubicaciones.csv
+
+#lda
+docker run --rm -v dpaequipo10_store:/dpaequipo10/data --env-file ./.env dpaequipo10/test-python-lda --bucket vis4googlet --inputfile /tmp/busquedas.txt --n_features 5000 --n_topics 20 --n_top_words 20 --outputfile /tmp/busquedas_topicos.txt
+
+max_iter: 5
+learning_method: online
+learning_offset: 50
+random_state: 0
+
+
+
+docker run --rm -v dpaequipo10_store:/dpaequipo10/data --env-file ./.env localhost:5000/dpaequipo10/test-python-lda --bucket dpaequipo10 --inputfile /tmp/busquedas.txt --n_features 5000 --n_topics 20 --n_top_words 20 --max_iter 5 --learning_method online --learning_offset 50 --random_state 0 --outputfile /tmp/busquedas_topicos.txt
+
+
+docker run --rm -v dpaequipo10_store:/dpaequipo10/data --env-file ./.env dpaequipo10/test-python-lda --bucket dpaequipo10 --inputfile /tmp/mail.txt --n_features 5000 --n_topics 20 --n_top_words 20 --max_iter 5 --learning_method online --learning_offset 50 --random_state 0 --outputfile /tmp/mail_topicos.txt
+
+
+
+docker run --rm -v dpaequipo10_store:/dpaequipo10/data --env-file ./.env dpaequipo10/test-python-ubicacioneshtml --bucket dpaequipo10 --inputfile1 /modelo/dbscan_ubicaciones.csv --inputfile2 /modelo/categorias.csv --outputfile hola.html --places AIzaSyCsgMwi_tzAVkae-8Rq9v2A_kjeJF5L2kU --radius 200
+
+
+docker run --rm -v dpaequipo10_store:/dpaequipo10/data --env-file ./.env dpaequipo10/test-python-ubicacioneshtml --bucket dpaequipo10 --inputfile1 /modelo/dbscan_ubicaciones.csv --inputfile2 /modelo/categorias.csv --outputfile hola.html --places AIzaSyCsgMwi_tzAVkae-8Rq9v2A_kjeJF5L2kU --radius 200
+
+              
